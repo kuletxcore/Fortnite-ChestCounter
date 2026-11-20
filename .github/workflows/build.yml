@@ -4,6 +4,11 @@ on:
     branches: ['**']
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release to publish with the exe and the APK (e.g. v1.5.1); empty = build only'
+        required: false
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -20,13 +25,17 @@ jobs:
         with:
           name: ChestCounter
           path: dist/ChestCounter.exe
-      - name: Attach to the release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Attach to the release (tags, or a release asked for when run by hand)
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: dist/ChestCounter.exe
           body_path: RELEASE_NOTES.md
   android:
+    # After the exe: the exe job creates the release, this one adds the APK to it.
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,9 +56,11 @@ jobs:
         with:
           name: ChestCounter-android
           path: dist-android/ChestCounter.apk
-      - name: Attach to the release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Attach to the release (tags, or a release asked for when run by hand)
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: dist-android/ChestCounter.apk
           body_path: RELEASE_NOTES.md
