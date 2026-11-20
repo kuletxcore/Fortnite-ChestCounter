@@ -30,6 +30,7 @@
     <Compile Include="..\..\src\ChestCounter\Tracker.cs" Link="Shared\Tracker.cs" />
     <Compile Include="..\..\src\ChestCounter\TreasureCatalog.cs" Link="Shared\TreasureCatalog.cs" />
     <Compile Include="..\..\src\ChestCounter\TreasureImages.cs" Link="Shared\TreasureImages.cs" />
+    <Compile Include="..\..\src\ChestCounter\ReleaseNotes.cs" Link="Shared\ReleaseNotes.cs" />
     <Compile Include="..\..\src\ChestCounter.Android\CueMatcher.cs" Link="Android\CueMatcher.cs" />
     <Compile Include="..\..\src\ChestCounter.Android\TallyRecord.cs" Link="Android\TallyRecord.cs" />
     <Compile Include="..\..\src\ChestCounter.Android\CounterReset.cs" Link="Android\CounterReset.cs" />
@@ -40,5 +41,8 @@
     <EmbeddedResource Include="..\..\content\content.json" LogicalName="content.json" />
     <!-- The file players download, checked as it is in the repository. -->
     <None Include="..\..\content\content.json" Link="content.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\RELEASE_NOTES.md" Link="RELEASE_NOTES.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ChestCounter\ChestCounter.csproj" Link="versions\exe.csproj" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\ChestCounter.Android\ChestCounter.Android.csproj" Link="versions\android.csproj" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

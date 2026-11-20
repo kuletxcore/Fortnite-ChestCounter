@@ -8,8 +8,8 @@
     <RootNamespace>ChestCounter.Droid</RootNamespace>
     <ApplicationId>io.github.chestcounter.android</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>1.5.1</ApplicationDisplayVersion>
-    <Version>1.5.1</Version>
+    <ApplicationDisplayVersion>1.5.2</ApplicationDisplayVersion>
+    <Version>1.5.2</Version>
     <InvariantGlobalization>false</InvariantGlobalization>
     <!-- The parser discovers its types by reflection: no trimming. -->
     <PublishTrimmed>false</PublishTrimmed>
