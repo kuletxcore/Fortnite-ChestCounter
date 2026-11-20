@@ -53,6 +53,14 @@ Because Fortnite only writes the replay's decryption key when the match ends, ch
 > [!TIP]
 > Fortnite only keeps a limited number of unsaved replays and deletes the oldest ones, and a match played while the counter is closed is not counted. Turn on **Settings → Open with Fortnite** so you never have to think about it.
 
+## Android
+
+Playing on a phone? Install [**`ChestCounter.apk`**](../../releases/latest) (Android 8 or later). Fortnite on Android
+does not record replays, so the phone app counts differently: a floating counter over the game, tapped for each chest,
+or **auto-detect** (screen capture, after you teach it once what a chest search looks like on your screen). The
+report, the chances and the history are the same as on the PC, and PC replays can be imported too. Details and limits:
+[`src/ChestCounter.Android/README.md`](src/ChestCounter.Android/README.md).
+
 ## The window
 
 Five tabs: **Home**, **Report**, **Overlay**, **Settings** and **Help**. At the top, your account and what the counter is doing (*Waiting for a match*, *Match in progress*, *Counting the chests…*).
@@ -200,7 +208,11 @@ ChestCounter.exe --overlay-preview <file.png>   save previews of the overlay, th
 
 ## Build it yourself
 
-Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows x64), then double-click **`build.bat`**: the exe is written to `dist\ChestCounter.exe`. The GitHub Actions workflow builds the exe on every push and attaches it to a release when a `v*` tag is pushed, with the text of [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (also shown in the counter after an update).
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows x64), then double-click **`build.bat`**: the exe is written to `dist\ChestCounter.exe`. The Android app builds on any OS with the Android workload: see [`src/ChestCounter.Android/README.md`](src/ChestCounter.Android/README.md).
+
+**Tests** (any OS): `dotnet test tests/ChestCounter.Tests`. They check `content/content.json` (run them before pushing a change to it), the game modes, the odds, the chests estimate, and the Android counting and auto-detect logic.
+
+**CI** (GitHub Actions, on every push): tests, then the exe, then the APK, each kept as a downloadable artifact. A pushed `v*` tag, or a manual run of the workflow with a `release` name, publishes both files in a release, with the text of [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (also shown in the counter after an update).
 
 ## License and credits
 

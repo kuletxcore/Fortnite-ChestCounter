@@ -44,7 +44,7 @@ public static class ReplaySync
             var rootDoc = DocumentsContract.GetTreeDocumentId(tree)!;
             foreach (var doc in FindReplays(c, tree, rootDoc, 0))
             {
-                Copy(() => c.ContentResolver!.OpenInputStream(doc.Uri)!, doc.Name, doc.Size, doc.Modified, destFolder);
+                Copy(() => c.ContentResolver!.OpenInputStream(doc.Uri)!, doc.Name, doc.Size, doc.Modified, destFolder, waitIfRecent: true);
             }
             return Result.Synced;
         }
@@ -128,14 +128,17 @@ public static class ReplaySync
         {
             name += ".replay";
         }
-        return Copy(() => c.ContentResolver!.OpenInputStream(uri)!, name, size, modified, destFolder);
+        // Picked or shared by the player: a finished file, copied at once. Many apps that share a file give no date, and
+        // "now" must not be taken for a replay still being written.
+        return Copy(() => c.ContentResolver!.OpenInputStream(uri)!, name, size, modified, destFolder, waitIfRecent: false);
     }
 
     /// <summary>
     /// Copies a replay unless the copy is already the same. The copy keeps the original's date, so that the counter
     /// sees the same file (and the same "finished a while ago") as on the PC.
     /// </summary>
-    private static bool Copy(Func<Stream> open, string name, long size, DateTime modifiedUtc, string destFolder)
+    /// <param name="waitIfRecent">Folder sync: a file changed in the last seconds is still being written, try again later.</param>
+    private static bool Copy(Func<Stream> open, string name, long size, DateTime modifiedUtc, string destFolder, bool waitIfRecent)
     {
         name = string.Concat(Path.GetFileName(name).Select(ch => Path.GetInvalidFileNameChars().Contains(ch) ? '_' : ch));
         var dest = new FileInfo(Path.Combine(destFolder, name));
@@ -144,7 +147,7 @@ public static class ReplaySync
             return false;
         }
         // Being written right now (a match in progress): wait for the next pass.
-        if (DateTime.UtcNow - modifiedUtc < TimeSpan.FromSeconds(5))
+        if (waitIfRecent && DateTime.UtcNow - modifiedUtc < TimeSpan.FromSeconds(5))
         {
             return false;
         }

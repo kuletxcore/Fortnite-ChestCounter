@@ -161,6 +161,15 @@ public static class TreasureCatalog
     private static readonly string[] Kinds = { GoldOutfit, PirateShop, VehicleDecal, PickaxeOrBackBling, JamTrack, LoadingScreen, Gizmo };
 
     /// <summary>
+    /// Checks a content.json without using it (the tests run it on content/content.json, so that a mistake is caught
+    /// before the file reaches the players or is built into the apps). Null when valid, else why it is refused.
+    /// </summary>
+    public static string? Validate(string json) => Parse(json, out var error) == null ? error ?? "not valid" : null;
+
+    /// <summary>Revision of a valid content.json, null when it is refused.</summary>
+    public static int? RevisionOf(string json) => Parse(json, out _)?.Revision;
+
+    /// <summary>
     /// Reads and checks content.json. Only data, never code or markup: every text is shown escaped, every number has to
     /// be in range, every kind known, every picture an https address. Anything wrong and the whole file is refused.
     /// </summary>

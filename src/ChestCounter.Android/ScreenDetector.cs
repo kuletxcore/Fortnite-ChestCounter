@@ -9,21 +9,9 @@ using Android.Runtime;
 
 namespace ChestCounter.Droid;
 
-/// <summary>
-/// The spot of the screen that shows while a chest is being searched (the search ring, the Search button...), taught
-/// by the player on a screenshot of their own game: HUD layouts differ between phones and settings, so nothing is
-/// guessed. Stored as a small grayscale picture at the capture resolution.
-/// </summary>
-public sealed class ChestCue
+/// <summary>Where the taught cue is kept (the cue itself is in CueMatcher.cs, without Android types).</summary>
+public sealed partial class ChestCue
 {
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int W { get; set; }
-    public int H { get; set; }
-    public int FrameW { get; set; }
-    public int FrameH { get; set; }
-    public string Gray { get; set; } = "";
-
     public static string PathIn(Context c) => System.IO.Path.Combine(c.FilesDir!.AbsolutePath, "chest-cue.json");
 
     public static ChestCue? Load(Context c)
