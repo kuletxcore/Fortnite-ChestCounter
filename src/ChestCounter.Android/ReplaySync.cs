@@ -4,23 +4,17 @@ using Android.Provider;
 namespace ChestCounter.Droid;
 
 /// <summary>
-/// Brings Fortnite's replay files into the app's folder. Fortnite (com.epicgames.fortnite) writes them in its own
-/// storage, Android/data/com.epicgames.fortnite/files/.../Saved/Demos. The app reads them through a folder the
-/// player granted with the system picker (Storage Access Framework), or directly on Android 10 and older. Files are
-/// opened read-only; nothing of Fortnite's is changed.
+/// Brings replay files recorded by Fortnite on a PC into the app's folder (Fortnite on Android records none): from a
+/// folder the player granted with the system picker (Storage Access Framework), kept in sync with the PC for
+/// example, or picked / shared by hand. Files are opened read-only.
 /// </summary>
 public static class ReplaySync
 {
     public const string FortnitePackage = "com.epicgames.fortnite";
     private const string Prefs = "replay_sync";
     private const string TreeKey = "tree_uri";
-    private const string ExternalStorageAuthority = "com.android.externalstorage.documents";
 
     public enum Result { Synced, NoFolder, Lost }
-
-    /// <summary>Where the folder picker opens: Fortnite's own storage.</summary>
-    public static Android.Net.Uri FortniteInitialUri =>
-        DocumentsContract.BuildDocumentUri(ExternalStorageAuthority, $"primary:Android/data/{FortnitePackage}/files")!;
 
     public static Android.Net.Uri? GrantedTree(Context c)
     {
@@ -34,50 +28,16 @@ public static class ReplaySync
         c.GetSharedPreferences(Prefs, FileCreationMode.Private)!.Edit()!.PutString(TreeKey, tree.ToString()).Apply();
     }
 
-    /// <summary>Folder Fortnite writes to, readable directly only on Android 10 and older.</summary>
-    private static IEnumerable<string> DirectFolders()
-    {
-        var root = Android.OS.Environment.ExternalStorageDirectory?.AbsolutePath ?? "/storage/emulated/0";
-        var files = Path.Combine(root, "Android", "data", FortnitePackage, "files");
-        if (!Directory.Exists(files))
-        {
-            yield break;
-        }
-        IEnumerable<string> demos;
-        try
-        {
-            demos = Directory.EnumerateDirectories(files, "Demos", new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 6, IgnoreInaccessible = true }).ToList();
-        }
-        catch
-        {
-            yield break;
-        }
-        foreach (var d in demos)
-        {
-            yield return d;
-        }
-    }
-
     public static Result Sync(Context c, string destFolder)
     {
-        var any = false;
-        foreach (var dir in DirectFolders())
-        {
-            any = true;
-            foreach (var f in new DirectoryInfo(dir).EnumerateFiles("*.replay"))
-            {
-                Copy(() => f.OpenRead(), f.Name, f.Length, f.LastWriteTimeUtc, destFolder);
-            }
-        }
-
         var tree = GrantedTree(c);
         if (tree == null)
         {
-            return any ? Result.Synced : Result.NoFolder;
+            return Result.NoFolder;
         }
         if (!c.ContentResolver!.PersistedUriPermissions.Any(p => p.Uri?.Equals(tree) == true && p.IsReadPermission))
         {
-            return any ? Result.Synced : Result.Lost;
+            return Result.Lost;
         }
         try
         {
@@ -121,8 +81,7 @@ public static class ReplaySync
                 var mime = cursor.GetString(2);
                 if (mime == DocumentsContract.Document.MimeTypeDir)
                 {
-                    // The game data (Paks...) is large and has no replays: skip it.
-                    if (!name.Equals("Paks", StringComparison.OrdinalIgnoreCase) && !name.StartsWith('.'))
+                    if (!name.StartsWith('.'))
                     {
                         folders.Add(id);
                     }

@@ -3,11 +3,11 @@ using Android.Content;
 namespace ChestCounter.Droid;
 
 /// <summary>
-/// The counter on Android: the same history, analysis and report as the Windows exe, in the app's private storage.
-/// Replays are copied into <see cref="DemosFolder"/> (from the Fortnite folder the player granted, or imported by
-/// hand), then read by the shared <see cref="Tracker"/>. Every call is serialized by one lock.
+/// The counter on Android: the same history and report as the Windows exe, in the app's private storage. Fortnite on
+/// Android records no replays, so matches are counted by hand (Tally.cs); replays from a PC can be imported into
+/// <see cref="DemosFolder"/> and are read by the shared <see cref="Tracker"/>. Every call is serialized by one lock.
 /// </summary>
-public sealed class Engine
+public sealed partial class Engine
 {
     private static Engine? _instance;
     private static readonly object InstanceLock = new();
@@ -61,6 +61,7 @@ public sealed class Engine
         var data = Store.LoadData();
         Tracker = new Tracker(Store, Config, data);
         Tracker.UpgradeIfNeeded();
+        LoadTally();
 
         TreasureCatalog.LoadCached(Store.Folder);
         TreasureImages.Folder = Path.Combine(Store.Folder, "images");
@@ -93,7 +94,11 @@ public sealed class Engine
     /// </summary>
     public OverlayView Overlay() => _overlay ??= BuildOverlay();
 
-    private OverlayView BuildOverlay() => OverlayModel.Build(Profiles.View(Tracker.Data, Config), null, Tracker.HasPending, Config.ShowSquadTotal);
+    private OverlayView BuildOverlay()
+    {
+        var live = LiveRecord();
+        return OverlayModel.Build(Profiles.View(Tracker.Data, Config), live, live != null || Tracker.HasPending, Config.ShowSquadTotal);
+    }
 
     public void SetLanguage(string code)
     {
@@ -175,12 +180,12 @@ public sealed class Engine
         }
         return sync switch
         {
-            ReplaySync.Result.NoFolder => L.T("Choisis le dossier des replays de Fortnite, ou importe des replays.",
-                "Pick Fortnite's replays folder, or import replays.",
-                "Elige la carpeta de repeticiones de Fortnite, o importa repeticiones."),
-            ReplaySync.Result.Lost => L.T("L'accès au dossier de Fortnite a été perdu : choisis-le à nouveau.",
-                "Access to Fortnite's folder was lost: pick it again.",
-                "Se perdió el acceso a la carpeta de Fortnite: elígela de nuevo."),
+            ReplaySync.Result.NoFolder => L.T("Touche 🧰 sur le compteur flottant à chaque coffre ouvert.",
+                "Tap 🧰 on the floating counter for each chest you open.",
+                "Toca 🧰 en el contador flotante por cada cofre que abras."),
+            ReplaySync.Result.Lost => L.T("L'accès au dossier de replays PC a été perdu : choisis-le à nouveau.",
+                "Access to the PC replays folder was lost: pick it again.",
+                "Se perdió el acceso a la carpeta de repeticiones del PC: elígela de nuevo."),
             _ => L.T("À jour. En attente de la prochaine partie.", "Up to date. Waiting for the next match.", "Al día. Esperando la próxima partida."),
         };
     }

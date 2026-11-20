@@ -49,10 +49,6 @@ public sealed class MainActivity : Activity
         {
             RequestPermissions(new[] { Manifest.Permission.PostNotifications }, 0);
         }
-        if (Build.VERSION.SdkInt <= BuildVersionCodes.Q && CheckSelfPermission(Manifest.Permission.ReadExternalStorage) != Permission.Granted)
-        {
-            RequestPermissions(new[] { Manifest.Permission.ReadExternalStorage }, 0);
-        }
 
         if (!HandleShared(Intent))
         {
@@ -141,8 +137,16 @@ public sealed class MainActivity : Activity
         {
             AddAction(L.T("Autoriser l'overlay", "Allow the overlay", "Permitir el overlay"), false, AskOverlay);
         }
-        AddAction(ReplaySync.GrantedTree(this) == null ? L.T("Dossier de Fortnite", "Fortnite folder", "Carpeta de Fortnite") : L.T("Changer de dossier", "Change folder", "Cambiar carpeta"), false, PickReplayFolder);
-        AddAction(L.T("Importer des replays", "Import replays", "Importar repeticiones"), false, PickReplayFiles);
+        // Counting by hand (Fortnite on Android records no replays): also here when the overlay is not allowed.
+        AddAction(_engine.InMatch ? L.T($"🧰 +1 (partie : {_engine.LiveChests})", $"🧰 +1 (match: {_engine.LiveChests})", $"🧰 +1 (partida: {_engine.LiveChests})") : "🧰 +1", false, _engine.AddChest);
+        AddAction("★ +1", false, _engine.AddTreasure);
+        if (_engine.InMatch)
+        {
+            AddAction(L.T("⏹ Fin de partie", "⏹ End match", "⏹ Fin de partida"), false, _engine.EndMatch);
+        }
+        AddAction(L.T("Mode : ", "Mode: ", "Modo: ") + Pretty.Playlist(_engine.Playlist), false, _engine.NextPlaylist);
+        AddAction(L.T("Importer des replays PC", "Import PC replays", "Importar repeticiones del PC"), false, PickReplayFiles);
+        AddAction(ReplaySync.GrantedTree(this) == null ? L.T("Dossier de replays PC", "PC replays folder", "Carpeta de repeticiones del PC") : L.T("Changer de dossier", "Change folder", "Cambiar carpeta"), false, PickReplayFolder);
         AddAction(L.T("Actualiser", "Refresh", "Actualizar"), false, () => ScanInBackground(force: true));
         AddAction(L.NativeName(NextLanguage), false, () =>
         {
@@ -202,17 +206,13 @@ public sealed class MainActivity : Activity
         new AlertDialog.Builder(this)
             .SetTitle(L.T("Dossier des replays", "Replays folder", "Carpeta de repeticiones"))!
             .SetMessage(L.T(
-                "Choisis le dossier où Fortnite enregistre ses replays (Android/data/com.epicgames.fortnite/files/…/Saved/Demos), puis « Utiliser ce dossier ». Si Android refuse ce dossier, choisis un dossier où tu copies tes replays (depuis ton PC par exemple).",
-                "Pick the folder where Fortnite saves its replays (Android/data/com.epicgames.fortnite/files/…/Saved/Demos), then \"Use this folder\". If Android refuses that folder, pick a folder you copy your replays to (from your PC, for example).",
-                "Elige la carpeta donde Fortnite guarda sus repeticiones (Android/data/com.epicgames.fortnite/files/…/Saved/Demos), luego «Usar esta carpeta». Si Android rechaza esa carpeta, elige una carpeta donde copies tus repeticiones (desde tu PC, por ejemplo)."))!
+                "Choisis un dossier où tu copies les replays de ton PC (%LOCALAPPDATA%\\FortniteGame\\Saved\\Demos), par exemple synchronisé avec une appli de synchronisation. Les nouveaux replays y sont comptés automatiquement.",
+                "Pick a folder you copy your PC's replays to (%LOCALAPPDATA%\\FortniteGame\\Saved\\Demos), for example one kept in sync by a sync app. New replays there are counted automatically.",
+                "Elige una carpeta donde copies las repeticiones de tu PC (%LOCALAPPDATA%\\FortniteGame\\Saved\\Demos), por ejemplo una sincronizada con una app de sincronización. Las nuevas repeticiones se cuentan automáticamente."))!
             .SetPositiveButton(L.T("Choisir", "Pick", "Elegir"), (_, _) =>
             {
                 var i = new Intent(Intent.ActionOpenDocumentTree);
                 i.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantPersistableUriPermission);
-                if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-                {
-                    i.PutExtra(Android.Provider.DocumentsContract.ExtraInitialUri, ReplaySync.FortniteInitialUri);
-                }
                 StartActivityForResult(i, PickFolder);
             })!
             .SetNegativeButton(L.T("Annuler", "Cancel", "Cancelar"), (_, _) => { })!
@@ -326,18 +326,30 @@ public sealed class MainActivity : Activity
         new AlertDialog.Builder(this)
             .SetTitle(L.T("Comment ça marche", "How it works", "Cómo funciona"))!
             .SetMessage(L.T(
-                "Le compteur lit les replays que Fortnite enregistre après chaque partie (Réglages → Jeu → Replays : activés). Il ne touche ni au jeu ni à sa mémoire, et ne fait que lire les fichiers.\n\n" +
-                "• Fortnite sur Android : donne accès à son dossier de replays (« Dossier de Fortnite »). Selon la version d'Android, l'accès au dossier Android/data peut être refusé par le système.\n" +
-                "• Replays du PC : copie-les sur le téléphone (%LOCALAPPDATA%\\FortniteGame\\Saved\\Demos sur le PC) et importe-les, ou choisis le dossier où tu les copies.\n\n" +
-                "« Jouer à Fortnite » lance le jeu et garde le compteur actif : l'overlay flottant affiche tes coffres par-dessus le jeu (déplace-le du doigt). Les coffres d'une partie sont comptés quelques secondes après sa fin.",
-                "The counter reads the replays Fortnite saves after each match (Settings → Game → Replays: On). It never touches the game or its memory: it only reads the files.\n\n" +
-                "• Fortnite on Android: give access to its replays folder (\"Fortnite folder\"). Depending on the Android version, the system may refuse access to the Android/data folder.\n" +
-                "• Replays from a PC: copy them to the phone (%LOCALAPPDATA%\\FortniteGame\\Saved\\Demos on the PC) and import them, or pick the folder you copy them to.\n\n" +
-                "\"Play Fortnite\" starts the game and keeps the counter running: the floating overlay shows your chests over the game (drag it with a finger). A match's chests are counted a few seconds after it ends.",
-                "El contador lee las repeticiones que Fortnite guarda tras cada partida (Ajustes → Juego → Repeticiones: activadas). Nunca toca el juego ni su memoria: solo lee los archivos.\n\n" +
-                "• Fortnite en Android: da acceso a su carpeta de repeticiones («Carpeta de Fortnite»). Según la versión de Android, el sistema puede denegar el acceso a la carpeta Android/data.\n" +
-                "• Repeticiones del PC: cópialas al teléfono (%LOCALAPPDATA%\\FortniteGame\\Saved\\Demos en el PC) e impórtalas, o elige la carpeta donde las copias.\n\n" +
-                "«Jugar a Fortnite» abre el juego y mantiene el contador activo: el overlay flotante muestra tus cofres sobre el juego (muévelo con el dedo). Los cofres de una partida se cuentan unos segundos después de terminar."))!
+                "Fortnite sur Android n'enregistre pas de replays : ici, tu comptes tes coffres en touchant le compteur flottant.\n\n" +
+                "• « Jouer à Fortnite » lance le jeu et affiche le compteur par-dessus.\n" +
+                "• 🧰 +1 à chaque coffre ouvert (appui long : annuler le dernier). Avec la fouille automatique, pense à toucher 🧰 quand le coffre s'ouvre.\n" +
+                "• ★ quand un coffre te donne un trésor.\n" +
+                "• ⏹ à la fin de la partie (sinon elle se termine seule après 35 min sans coffre).\n" +
+                "• Déplace le compteur en faisant glisser les chiffres. +1 coffre est aussi dans la notification.\n\n" +
+                "Chaque coffre garde son heure : ceux d'une Heure du trésor comptent avec leurs chances augmentées. Choisis le mode joué (« Mode ») : seul le Battle Royale compte.\n\n" +
+                "Tu joues aussi sur PC ? Importe ses replays : leurs coffres sont comptés automatiquement.",
+                "Fortnite on Android records no replays: here you count your chests by tapping the floating counter.\n\n" +
+                "• \"Play Fortnite\" starts the game with the counter over it.\n" +
+                "• 🧰 +1 for each chest opened (long press: undo the last one). With auto-search on, remember to tap 🧰 when the chest opens.\n" +
+                "• ★ when a chest gives you a treasure.\n" +
+                "• ⏹ when the match is over (otherwise it ends by itself after 35 minutes without a chest).\n" +
+                "• Drag the figures to move the counter. +1 chest is also in the notification.\n\n" +
+                "Each chest keeps its time: those of a Treasure Hour count with their boosted odds. Pick the mode you play (\"Mode\"): only Battle Royale counts.\n\n" +
+                "Also playing on PC? Import its replays: their chests are counted automatically.",
+                "Fortnite en Android no guarda repeticiones: aquí cuentas tus cofres tocando el contador flotante.\n\n" +
+                "• «Jugar a Fortnite» abre el juego con el contador encima.\n" +
+                "• 🧰 +1 por cada cofre abierto (pulsación larga: deshacer el último). Con la búsqueda automática, recuerda tocar 🧰 cuando se abra el cofre.\n" +
+                "• ★ cuando un cofre te da un tesoro.\n" +
+                "• ⏹ al terminar la partida (si no, termina sola tras 35 min sin cofres).\n" +
+                "• Arrastra las cifras para mover el contador. +1 cofre también está en la notificación.\n\n" +
+                "Cada cofre guarda su hora: los de una Hora del tesoro cuentan con sus probabilidades aumentadas. Elige el modo que juegas («Modo»): solo cuenta Battle Royale.\n\n" +
+                "¿También juegas en PC? Importa sus repeticiones: sus cofres se cuentan automáticamente."))!
             .SetPositiveButton("OK", (_, _) => { })!
             .Show();
     }
