@@ -10,8 +10,9 @@ using Android.Widget;
 namespace ChestCounter.Droid;
 
 /// <summary>
-/// Keeps counting while Fortnite is played: every few seconds the new replays are copied and read, and a small
-/// floating counter (like the PC overlay) is drawn over the game. Stopped from its notification or from the app.
+/// Keeps the floating counter over Fortnite while it is played: chests are tapped by hand, or detected on screen when
+/// the player turned screen capture on (👁, see <see cref="ScreenDetector"/>). PC replays of a synced folder are read
+/// every few seconds too. Stopped from its notification or from the app.
 /// </summary>
 // Declared in AndroidManifest.xml (a special-use foreground service needs its <property> there).
 [Register("io.github.chestcounter.android.CounterService")]
@@ -21,11 +22,19 @@ public sealed class CounterService : Service
     public const string ActionToggleOverlay = "io.github.chestcounter.TOGGLE_OVERLAY";
     public const string ActionAddChest = "io.github.chestcounter.ADD_CHEST";
     public const string ActionEndMatch = "io.github.chestcounter.END_MATCH";
+    public const string ActionStartCapture = "io.github.chestcounter.START_CAPTURE";
+    public const string ActionStopCapture = "io.github.chestcounter.STOP_CAPTURE";
+    public const string ActionCueChanged = "io.github.chestcounter.CUE_CHANGED";
     private const string Channel = "counter";
     private const int NotificationId = 1;
     private static readonly TimeSpan Interval = TimeSpan.FromSeconds(15);
 
     public static bool Running { get; private set; }
+
+    /// <summary>Screen capture is on: chests are detected by themselves.</summary>
+    public static bool Capturing => _detector != null;
+
+    private static ScreenDetector? _detector;
 
     private Engine _engine = null!;
     private Handler _main = null!;
@@ -75,16 +84,24 @@ public sealed class CounterService : Service
             case ActionEndMatch when Running:
                 _engine.EndMatch();
                 return StartCommandResult.Sticky;
+            case ActionStopCapture:
+                StopCapture();
+                return Running ? StartCommandResult.Sticky : StartCommandResult.NotSticky;
+            case ActionCueChanged:
+                if (_detector != null)
+                {
+                    _detector.Threshold = Sensitivity;
+                    _detector.SetCue(ChestCue.Load(this));
+                }
+                UpdateUi();
+                return Running ? StartCommandResult.Sticky : StartCommandResult.NotSticky;
         }
 
-        var notification = BuildNotification();
-        if (Build.VERSION.SdkInt >= BuildVersionCodes.UpsideDownCake)
+        var capture = intent?.Action == ActionStartCapture;
+        GoForeground(capture);
+        if (capture)
         {
-            StartForeground(NotificationId, notification, ForegroundService.TypeSpecialUse);
-        }
-        else
-        {
-            StartForeground(NotificationId, notification);
+            StartCapture(intent!);
         }
 
         if (!Running)
@@ -113,9 +130,114 @@ public sealed class CounterService : Service
         return StartCommandResult.Sticky;
     }
 
+    /// <summary>
+    /// Foreground service: special use (the counter over the game), plus media projection while the screen is watched
+    /// (Android 10 and later require that type before the capture starts).
+    /// </summary>
+    private void GoForeground(bool capture)
+    {
+        var notification = BuildNotification();
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.UpsideDownCake)
+        {
+            StartForeground(NotificationId, notification, capture || Capturing ? ForegroundService.TypeSpecialUse | ForegroundService.TypeMediaProjection : ForegroundService.TypeSpecialUse);
+        }
+        else if (Build.VERSION.SdkInt >= BuildVersionCodes.Q && (capture || Capturing))
+        {
+            StartForeground(NotificationId, notification, ForegroundService.TypeMediaProjection);
+        }
+        else
+        {
+            StartForeground(NotificationId, notification);
+        }
+    }
+
+    private void StartCapture(Intent intent)
+    {
+        StopCapture();
+#pragma warning disable CA1422
+        var data = intent.GetParcelableExtra("data") as Intent;
+#pragma warning restore CA1422
+        if (data == null)
+        {
+            return;
+        }
+        try
+        {
+            var detector = new ScreenDetector(this, intent.GetIntExtra("code", 0), data) { Threshold = Sensitivity };
+            detector.ChestDetected += () =>
+            {
+                _engine.AddChest();
+                _main.Post(() => _overlay?.Flash());
+            };
+            detector.Stopped += () => _main.Post(StopCapture);
+            _detector = detector;
+            if (!detector.HasCue && ChestCue.Load(this) == null)
+            {
+                Toast.MakeText(this, L.T("Touche 🎯 près d'un coffre pour apprendre au compteur à le reconnaître.",
+                    "Tap 🎯 next to a chest to teach the counter what a search looks like.",
+                    "Toca 🎯 junto a un cofre para enseñar al contador cómo se ve una búsqueda."), ToastLength.Long)!.Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write("Start capture", ex);
+            Toast.MakeText(this, ex.Message, ToastLength.Long)!.Show();
+        }
+        UpdateUi();
+    }
+
+    private void StopCapture()
+    {
+        var d = _detector;
+        _detector = null;
+        d?.Release();
+        if (Running)
+        {
+            GoForeground(false);
+            UpdateUi();
+        }
+    }
+
+    /// <summary>Similarity from which the taught cue counts as shown (the app's "Detection" setting).</summary>
+    public static readonly float[] Sensitivities = { 0.65f, 0.75f, 0.85f };
+
+    public float Sensitivity => GetSharedPreferences("detector", FileCreationMode.Private)!.GetFloat("threshold", 0.75f);
+
+    /// <summary>👁: asks Android for screen capture (its dialog), or stops it.</summary>
+    internal void ToggleCapture()
+    {
+        if (Capturing)
+        {
+            StopCapture();
+            return;
+        }
+        StartActivity(new Intent(this, typeof(CaptureConsentActivity)).AddFlags(ActivityFlags.NewTask));
+    }
+
+    /// <summary>🎯: in 3 seconds (time to stand at a chest), takes the screenshot the cue is drawn on.</summary>
+    internal void Teach()
+    {
+        if (_detector == null)
+        {
+            ToggleCapture();
+            return;
+        }
+        var detector = _detector;
+        _overlay?.Countdown(3, () => detector.Grab(path => _main.Post(() =>
+        {
+            if (path != null)
+            {
+                StartActivity(new Intent(this, typeof(CalibrateActivity)).AddFlags(ActivityFlags.NewTask));
+            }
+        })));
+    }
+
+    internal float? DetectorScore => _detector is { HasCue: true } d ? d.Score : null;
+
     public override void OnDestroy()
     {
         Running = false;
+        StopCapture();
         _engine.Changed -= OnChanged;
         _cts?.Cancel();
         _overlay?.Remove();
@@ -131,7 +253,7 @@ public sealed class CounterService : Service
         var canDraw = Build.VERSION.SdkInt < BuildVersionCodes.M || Android.Provider.Settings.CanDrawOverlays(this);
         if (_overlayWanted && canDraw)
         {
-            _overlay ??= new OverlayWindow(this, _engine);
+            _overlay ??= new OverlayWindow(this, _engine, this);
             _overlay.Show(view);
         }
         else
@@ -185,12 +307,19 @@ public sealed class CounterService : Service
 /// <summary>
 /// The floating counter over Fortnite: the figures (total, current match, session, treasures) and the buttons to count
 /// by hand. Tap 🧰 for each chest opened (long press: undo the last one), ★ for a treasure, ⏹ when the match is over.
-/// Drag the figures to move it.
+/// 👁 turns the automatic detection on or off, 🎯 teaches it what a chest search looks like. Drag the figures to move it.
 /// </summary>
 internal sealed class OverlayWindow
 {
     private readonly Context _context;
     private readonly Engine _engine;
+    private readonly CounterService _service;
+    private readonly Button _eye;
+    private readonly Button _teach;
+    private readonly Handler _main = new(Looper.MainLooper!);
+    private OverlayView? _last;
+    private string? _countdown;
+    private long _flashUntil;
     private readonly IWindowManager _wm;
     private readonly LinearLayout _root;
     private readonly TextView _total;
@@ -199,10 +328,11 @@ internal sealed class OverlayWindow
     private readonly WindowManagerLayoutParams _lp;
     private bool _added;
 
-    public OverlayWindow(Context context, Engine engine)
+    public OverlayWindow(Context context, Engine engine, CounterService service)
     {
         _context = context;
         _engine = engine;
+        _service = service;
         _wm = context.GetSystemService(Context.WindowService).JavaCast<IWindowManager>()!;
         var prefs = context.GetSharedPreferences("overlay", FileCreationMode.Private)!;
 
@@ -228,9 +358,16 @@ internal sealed class OverlayWindow
         treasure.Click += (_, _) => { treasure.PerformHapticFeedback(FeedbackConstants.VirtualKey); _engine.AddTreasure(); };
         _end = RoundButton("⏹", 44, Color.ParseColor("#1E2F3B"), Color.White);
         _end.Click += (_, _) => _engine.EndMatch();
+        _eye = RoundButton("👁", 40, Color.ParseColor("#1E2F3B"), Color.White);
+        _eye.Click += (_, _) => _service.ToggleCapture();
+        _teach = RoundButton("🎯", 40, Color.ParseColor("#1E2F3B"), Color.White);
+        _teach.Click += (_, _) => _service.Teach();
         _root.AddView(chest);
         _root.AddView(treasure);
         _root.AddView(_end);
+        _root.AddView(_eye);
+        _root.AddView(_teach);
+        Tick();
 
 #pragma warning disable CA1422
         var type = Build.VERSION.SdkInt >= BuildVersionCodes.O ? WindowManagerTypes.ApplicationOverlay : WindowManagerTypes.Phone;
@@ -296,15 +433,65 @@ internal sealed class OverlayWindow
 
     private int Dp(int v) => (int)(v * _context.Resources!.DisplayMetrics!.Density);
 
+    /// <summary>While the screen is watched: the similarity of the cue spot, refreshed twice a second.</summary>
+    private void Tick()
+    {
+        if (_added && _last != null && CounterService.Capturing)
+        {
+            Show(_last);
+        }
+        _main.PostDelayed(Tick, 500);
+    }
+
+    /// <summary>A chest was detected: the total blinks green for a moment.</summary>
+    public void Flash()
+    {
+        _flashUntil = SystemClock.ElapsedRealtime() + 1500;
+        if (_last != null) Show(_last);
+    }
+
+    /// <summary>"3, 2, 1" on the counter, then the action (the screenshot of 🎯, without the countdown on it).</summary>
+    public void Countdown(int seconds, Action then)
+    {
+        if (seconds <= 0)
+        {
+            _countdown = null;
+            _root.Visibility = ViewStates.Invisible;
+            // Hidden for the screenshot, shown again right after.
+            _main.PostDelayed(() =>
+            {
+                then();
+                _main.PostDelayed(() => _root.Visibility = ViewStates.Visible, 400);
+            }, 250);
+            return;
+        }
+        _countdown = $"🎯 {seconds}…";
+        if (_last != null) Show(_last);
+        _main.PostDelayed(() => Countdown(seconds - 1, then), 1000);
+    }
+
     public void Show(OverlayView v)
     {
+        _last = v;
         _total.Text = $"🧰 {v.Total}" + (v.CurrentLive ? "  ●" : "");
         var current = v.CurrentLive
             ? L.T($"Partie {v.Current}", $"Match {v.Current}", $"Partida {v.Current}")
             : v.Last != null ? L.T($"Dernière {v.Last}", $"Last {v.Last}", $"Última {v.Last}") : null;
         _detail.Text = (current != null ? current + " · " : "") + L.T($"Session {v.Session}", $"Session {v.Session}", $"Sesión {v.Session}") + $" · ★ {v.Treasures}"
             + (v.Squad != null ? $" · {OverlayModel.SquadLabel} {v.Squad}" : "");
+        if (CounterService.Capturing)
+        {
+            var score = _service.DetectorScore;
+            _detail.Text += score is { } sc ? $" · 👁 {Math.Max(0, sc):0.00}" : " · 👁 🎯?";
+        }
+        if (_countdown != null)
+        {
+            _detail.Text = _countdown;
+        }
+        _total.SetTextColor(SystemClock.ElapsedRealtime() < _flashUntil ? Color.ParseColor("#5BD18B") : Color.ParseColor("#F0C057"));
         _end.Visibility = _engine.InMatch ? ViewStates.Visible : ViewStates.Gone;
+        _teach.Visibility = CounterService.Capturing ? ViewStates.Visible : ViewStates.Gone;
+        ((Android.Graphics.Drawables.GradientDrawable)_eye.Background!).SetColor(CounterService.Capturing ? Color.ParseColor("#1F7F7A") : Color.ParseColor("#1E2F3B"));
         if (!_added)
         {
             _wm.AddView(_root, _lp);
@@ -314,6 +501,7 @@ internal sealed class OverlayWindow
 
     public void Remove()
     {
+        _main.RemoveCallbacksAndMessages(null);
         if (_added)
         {
             _wm.RemoveView(_root);

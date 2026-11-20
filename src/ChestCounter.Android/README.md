@@ -13,7 +13,15 @@ Xbox only), so on the phone the chests are **counted by hand**, with a floating 
   tap: remember to tap 🧰 when it opens. **★** when a chest gives a treasure, **⏹** when the match is over (a match
   with no chest for 35 minutes ends by itself). Drag the figures to move the counter. *+1 chest* is also in the
   notification, and the same buttons are in the app when the overlay is not allowed.
-- Each tap keeps its time, so the chests opened during a **Treasure Hour** count with their boosted odds. A match is
+- **Auto-detect (👁)**: the counter watches the screen (screen capture; Android shows its own consent dialog each time
+  it starts, the overlay permission does not cover it) and adds a chest when the **search cue** shows for a moment and
+  then goes away, which also catches the chests auto-search opens without a tap. The cue is taught once, on your own
+  game: tap **🎯** next to a chest, let the 3-second countdown end while the search shows, then draw a box around the
+  search ring or the *Search* button. The figure after 👁 on the counter is how close that spot looks to the cue
+  (1 = identical); *Detection* in the app sets how close it must be (loose / normal / strict). Frames are looked at a
+  few times per second at 360 px, in memory only: nothing is recorded or sent. A search given up halfway can't be told
+  from a finished one: long-press 🧰 to undo.
+- Each tap or detection keeps its time, so the chests opened during a **Treasure Hour** count with their boosted odds. A match is
   saved as the mode picked in the app (**Mode**: solo / duo / trio / squad, build or zero build).
 - The **report** (chances, collection, treasures, latest matches) is the same page as on the PC.
 - **Replays from a PC** can still be imported (*Import PC replays*, *Share* / *Open with* a `.replay`), or read from a
