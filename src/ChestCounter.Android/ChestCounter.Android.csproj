@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Android app: same replay analysis as the Windows exe (linked source files below), with an Android shell. -->
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ChestCounter</AssemblyName>
+    <RootNamespace>ChestCounter.Droid</RootNamespace>
+    <ApplicationId>io.github.chestcounter.android</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.5.1</ApplicationDisplayVersion>
+    <Version>1.5.1</Version>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- The parser discovers its types by reflection: no trimming. -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+    <DefineConstants>$(DefineConstants);ANDROID_APP</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\FortniteReplayReader\FortniteReplayReader.csproj" />
+  </ItemGroup>
+  <!-- Platform-neutral parts of the Windows app (analysis, history, report). The Windows-only ones are left out. -->
+  <ItemGroup>
+    <Compile Include="..\ChestCounter\AppInfo.cs" Link="Core\AppInfo.cs" />
+    <Compile Include="..\ChestCounter\ChestEstimate.cs" Link="Core\ChestEstimate.cs" />
+    <Compile Include="..\ChestCounter\ConsoleUi.cs" Link="Core\ConsoleUi.cs" />
+    <Compile Include="..\ChestCounter\ErrorLog.cs" Link="Core\ErrorLog.cs" />
+    <Compile Include="..\ChestCounter\GameModes.cs" Link="Core\GameModes.cs" />
+    <Compile Include="..\ChestCounter\Lang.cs" Link="Core\Lang.cs" />
+    <Compile Include="..\ChestCounter\Models.cs" Link="Core\Models.cs" />
+    <Compile Include="..\ChestCounter\OverlayModel.cs" Link="Core\OverlayModel.cs" />
+    <Compile Include="..\ChestCounter\Profiles.cs" Link="Core\Profiles.cs" />
+    <Compile Include="..\ChestCounter\ReplayAnalyzer.cs" Link="Core\ReplayAnalyzer.cs" />
+    <Compile Include="..\ChestCounter\ReportWriter.cs" Link="Core\ReportWriter.cs" />
+    <Compile Include="..\ChestCounter\Tracker.cs" Link="Core\Tracker.cs" />
+    <Compile Include="..\ChestCounter\TreasureCatalog.cs" Link="Core\TreasureCatalog.cs" />
+    <Compile Include="..\ChestCounter\TreasureImages.cs" Link="Core\TreasureImages.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\ChestCounter\Assets\PirataOne-latin.woff2" LogicalName="PirataOne.woff2" />
+    <EmbeddedResource Include="..\..\RELEASE_NOTES.md" LogicalName="ReleaseNotes.md" />
+    <EmbeddedResource Include="..\..\content\content.json" LogicalName="content.json" />
+  </ItemGroup>
+</Project>

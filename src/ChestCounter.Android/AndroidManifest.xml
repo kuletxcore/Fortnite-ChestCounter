@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- Automatic chest detection: watching the screen while it is turned on (the system asks the player each time). -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+  <!-- The floating counter over Fortnite. -->
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+  <!-- Fortnite: to know whether it is installed and to start it from the counter. -->
+  <queries>
+    <package android:name="com.epicgames.fortnite" />
+  </queries>
+
+  <application android:label="@string/app_name" android:icon="@drawable/ic_launcher" android:allowBackup="true"
+               android:supportsRtl="true">
+    <service android:name="io.github.chestcounter.android.CounterService" android:exported="false"
+             android:foregroundServiceType="specialUse|mediaProjection">
+      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating chest counter the player taps while playing Fortnite, kept on screen over the game." />
+    </service>
+  </application>
+</manifest>
