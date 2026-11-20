@@ -61,6 +61,7 @@ public sealed partial class Engine
         var data = Store.LoadData();
         Tracker = new Tracker(Store, Config, data);
         Tracker.UpgradeIfNeeded();
+        LoadSession();
         LoadTally();
 
         TreasureCatalog.LoadCached(Store.Folder);

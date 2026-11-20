@@ -72,7 +72,17 @@ public sealed record ScanProgress(int Done, int Total);
 
 public static class ReportWriter
 {
-    public static readonly DateTime SessionStartUtc = DateTime.UtcNow;
+    /// <summary>
+    /// Start of the session ("Session" figures): when the exe started. The Android app keeps its own (its process can be
+    /// stopped by Android at any time) and moves it when the player resets the session.
+    /// </summary>
+    public static DateTime SessionStartUtc { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// A match that ended this long before <see cref="SessionStartUtc"/> still counts in the session (the exe can be
+    /// started a moment after a match). Zero on Android, where the session starts when the player says so.
+    /// </summary>
+    public static TimeSpan SessionSlack { get; set; } = TimeSpan.FromMinutes(2);
 
     /// <summary>Set while several replays are being analyzed: the report shows a loading card and refreshes faster.</summary>
     public static volatile ScanProgress? Progress;
@@ -86,7 +96,7 @@ public static class ReportWriter
             start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
         }
         var end = start.ToUniversalTime().AddSeconds(m.DurationSeconds ?? 0);
-        return end >= SessionStartUtc.AddMinutes(-2);
+        return end >= SessionStartUtc - SessionSlack;
     }
     private static CultureInfo Fr => L.Culture;
 
@@ -432,7 +442,7 @@ public static class ReportWriter
             <span class="muted" style="font-size:13px">{updated}</span></header>
             {LoadingCard(progress)}{NoticeCards()}{ProfilesLine(profiles, player)}
             <section class="tiles{(teamChests > 0 ? " hassquad" : "")}">
-              <div class="tile hero"><button type="button" class="editbtn" id="editchests" title="{H(L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"))}" aria-label="{H(L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"))}">{PencilIcon}</button><div class="k">{L.T("Coffres au total", "Chests in total", "Cofres en total")}</div><div class="v num">{grandTotal.ToString("N0", Fr)}</div><div class="l">{L.T($"ouverts ou détruits par toi · {session.ToString("N0", Fr)} depuis le lancement", $"opened or destroyed by you · {session.ToString("N0", Fr)} since the tool started", $"abiertos o destruidos por ti · {session.ToString("N0", Fr)} desde que se abrió")}{(data.ManualAdjust != 0 ? "<br>" + L.T($"dont {data.ManualAdjust.ToString("+#,0;-#,0", Fr)} ajoutés à la main", $"{data.ManualAdjust.ToString("+#,0;-#,0", Fr)} of them added by hand", $"de ellos, {data.ManualAdjust.ToString("+#,0;-#,0", Fr)} añadidos a mano") : "")}</div></div>
+              <div class="tile hero"><button type="button" class="editbtn" id="editchests" title="{H(L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"))}" aria-label="{H(L.T("Modifier mon nombre de coffres", "Edit my number of chests", "Modificar mi número de cofres"))}">{PencilIcon}</button><div class="k">{L.T("Coffres au total", "Chests in total", "Cofres en total")}</div><div class="v num">{grandTotal.ToString("N0", Fr)}</div><div class="l">{L.T($"ouverts ou détruits par toi · {session.ToString("N0", Fr)} cette session", $"opened or destroyed by you · {session.ToString("N0", Fr)} this session", $"abiertos o destruidos por ti · {session.ToString("N0", Fr)} en esta sesión")}{(data.ManualAdjust != 0 ? "<br>" + L.T($"dont {data.ManualAdjust.ToString("+#,0;-#,0", Fr)} ajoutés à la main", $"{data.ManualAdjust.ToString("+#,0;-#,0", Fr)} of them added by hand", $"de ellos, {data.ManualAdjust.ToString("+#,0;-#,0", Fr)} añadidos a mano") : "")}</div></div>
               {(teamChests > 0 ? Tile((grandTotal + teamChests).ToString("N0", Fr), L.T("total de l'équipe", "squad total", "total del equipo") + SquadInfo, L.T($"toi + {teamChests.ToString("N0", Fr)} par tes coéquipiers", $"you + {teamChests.ToString("N0", Fr)} by your teammates", $"tú + {teamChests.ToString("N0", Fr)} de tus compañeros")).Replace("<div class=\"tile\">", "<div class=\"tile squadtile\">") : "")}
               {Tile(matches.Count.ToString("N0", Fr), L.T("parties analysées", "matches analyzed", "partidas analizadas"))}
               {Tile(avg.ToString("0.0", Fr), L.T("coffres par partie", "chests per match", "cofres por partida"))}

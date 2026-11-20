@@ -21,6 +21,11 @@ Xbox only), so on the phone the chests are **counted by hand**, with a floating 
   (1 = identical); *Detection* in the app sets how close it must be (loose / normal / strict). Frames are looked at a
   few times per second at 360 px, in memory only: nothing is recorded or sent. A search given up halfway can't be told
   from a finished one: long-press 🧰 to undo.
+- **Reset**: hold **↺** on the counter for a new session (*Session* back to 0; the total, the history and the match
+  being counted are kept). In the app, **↺ Reset** offers the same, **Reset all counts** (matches, chests added by hand
+  and the match in progress, after a backup; the collection and the list of replays already read are kept), and
+  **Undo the last reset**, which brings the cleared counts back together with what was counted since. The session
+  survives the app being closed by Android, and a new one starts by itself after 4 hours without playing.
 - Each tap or detection keeps its time, so the chests opened during a **Treasure Hour** count with their boosted odds. A match is
   saved as the mode picked in the app (**Mode**: solo / duo / trio / squad, build or zero build).
 - The **report** (chances, collection, treasures, latest matches) is the same page as on the PC.

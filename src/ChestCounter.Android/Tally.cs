@@ -85,6 +85,11 @@ public sealed partial class Engine
             {
                 SaveMatch();
             }
+            if (_tally == null && SessionRules.StartsNewSession(SessionRules.LastActivityUtc(Tracker.Data), ReportWriter.SessionStartUtc, now))
+            {
+                // First chest after hours without playing: a new play session.
+                StartSession(now);
+            }
             _tally ??= new LiveTally { StartUtc = now };
             add(_tally, (float)(now - _tally.StartUtc).TotalSeconds);
             _tally.LastTapUtc = now;
@@ -112,6 +117,88 @@ public sealed partial class Engine
             _overlay = BuildOverlay();
         }
         Changed?.Invoke();
+    }
+
+    // ---- Session and reset ---------------------------------------------------------------------
+
+    private const string SessionKey = "session_start_ticks";
+
+    /// <summary>
+    /// The session survives the app's process (Android stops it whenever it likes): its start is saved, and only a reset
+    /// or hours without playing start a new one.
+    /// </summary>
+    private void LoadSession()
+    {
+        ReportWriter.SessionSlack = TimeSpan.Zero;
+        var ticks = Prefs.GetLong(SessionKey, 0);
+        if (ticks <= 0)
+        {
+            StartSession(DateTime.UtcNow);
+        }
+        else
+        {
+            ReportWriter.SessionStartUtc = new DateTime(ticks, DateTimeKind.Utc);
+        }
+    }
+
+    private void StartSession(DateTime utc)
+    {
+        ReportWriter.SessionStartUtc = utc;
+        Prefs.Edit()!.PutLong(SessionKey, utc.Ticks).Apply();
+    }
+
+    /// <summary>"Session" back to 0. The match being counted is saved first: it stays in the total and the history.</summary>
+    public void ResetSession()
+    {
+        lock (_lock)
+        {
+            SaveMatch();
+            StartSession(DateTime.UtcNow);
+            ReportWriter.WriteAll(Store, Config, Tracker.Data);
+            _overlay = BuildOverlay();
+            Status = L.T("Nouvelle session : la session repart de 0.", "New session: the session starts again from 0.", "Nueva sesión: la sesión vuelve a 0.");
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>Every count back to 0 (matches, chests added by hand, the match being counted), after a backup.</summary>
+    public CounterReset.Summary ResetAll()
+    {
+        CounterReset.Summary summary;
+        lock (_lock)
+        {
+            _tally = null;
+            SaveTally();
+            summary = CounterReset.ResetAll(Store, Tracker.Data);
+            StartSession(DateTime.UtcNow);
+            ReportWriter.WriteAll(Store, Config, Tracker.Data);
+            _overlay = BuildOverlay();
+            Status = L.T($"Compteur remis à 0 ({summary.Chests} coffres effacés). « Annuler la remise à 0 » les rend.",
+                $"Counter reset ({summary.Chests} chests cleared). \"Undo the reset\" brings them back.",
+                $"Contador a 0 ({summary.Chests} cofres borrados). «Deshacer el reinicio» los recupera.");
+        }
+        Changed?.Invoke();
+        return summary;
+    }
+
+    public bool CanUndoReset => CounterReset.CanRestore(Store);
+
+    /// <summary>Brings back what the last full reset cleared, with what was counted since.</summary>
+    public bool UndoReset()
+    {
+        bool done;
+        lock (_lock)
+        {
+            done = CounterReset.Restore(Store, Tracker.Data);
+            ReportWriter.WriteAll(Store, Config, Tracker.Data);
+            _overlay = BuildOverlay();
+            if (done)
+            {
+                Status = L.T("Remise à 0 annulée.", "Reset undone.", "Reinicio deshecho.");
+            }
+        }
+        Changed?.Invoke();
+        return done;
     }
 
     /// <summary>The match is over: it joins the history (a match with nothing tapped is dropped).</summary>

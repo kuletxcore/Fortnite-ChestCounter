@@ -307,7 +307,8 @@ public sealed class CounterService : Service
 /// <summary>
 /// The floating counter over Fortnite: the figures (total, current match, session, treasures) and the buttons to count
 /// by hand. Tap 🧰 for each chest opened (long press: undo the last one), ★ for a treasure, ⏹ when the match is over.
-/// 👁 turns the automatic detection on or off, 🎯 teaches it what a chest search looks like. Drag the figures to move it.
+/// 👁 turns the automatic detection on or off, 🎯 teaches it what a chest search looks like, ↺ (held) starts a new
+/// session. Drag the figures to move it.
 /// </summary>
 internal sealed class OverlayWindow
 {
@@ -365,8 +366,19 @@ internal sealed class OverlayWindow
         _root.AddView(chest);
         _root.AddView(treasure);
         _root.AddView(_end);
+        // ↺ new session: held down, so that a tap in the heat of a match does not reset anything.
+        var reset = RoundButton("↺", 36, Color.ParseColor("#1E2F3B"), Color.White);
+        reset.Click += (_, _) => Toast.MakeText(_context, L.T("Garde le doigt sur ↺ pour remettre la session à 0.",
+            "Hold ↺ to reset the session to 0.", "Mantén pulsado ↺ para poner la sesión a 0."), ToastLength.Short)!.Show();
+        reset.LongClick += (_, _) =>
+        {
+            reset.PerformHapticFeedback(FeedbackConstants.LongPress);
+            _engine.ResetSession();
+            Toast.MakeText(_context, L.T("Session remise à 0.", "Session reset to 0.", "Sesión puesta a 0."), ToastLength.Short)!.Show();
+        };
         _root.AddView(_eye);
         _root.AddView(_teach);
+        _root.AddView(reset);
         Tick();
 
 #pragma warning disable CA1422
