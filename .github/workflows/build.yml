@@ -12,7 +12,18 @@ on:
 permissions:
   contents: write
 jobs:
+  # The shared code and content/content.json, on every push: a content.json the apps would refuse never gets built.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Tests
+        run: dotnet test tests/ChestCounter.Tests/ChestCounter.Tests.csproj -c Release
   build:
+    needs: test
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +48,13 @@ jobs:
     # After the exe: the exe job creates the release, this one adds the APK to it.
     needs: build
     runs-on: ubuntu-latest
+    env:
+      # Optional repository secrets (see src/ChestCounter.Android/README.md). Without them the APK is signed with a
+      # throwaway debug key, and Android refuses to install it over a previous version (players must uninstall first).
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -49,7 +67,16 @@ jobs:
       - name: Android workload
         run: dotnet workload install android
       - name: Publish the APK
-        run: dotnet publish src/ChestCounter.Android/ChestCounter.Android.csproj -c Release -o dist-android -p:AndroidSdkDirectory=$ANDROID_SDK_ROOT
+        # versionCode = run number: each build is newer than the previous one for Android.
+        run: |
+          signing=""
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            signing="-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=$RUNNER_TEMP/release.keystore -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS -p:AndroidSigningStorePass=env:ANDROID_KEYSTORE_PASSWORD -p:AndroidSigningKeyPass=env:ANDROID_KEY_PASSWORD"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: the APK is signed with a throwaway debug key and cannot update a previous install."
+          fi
+          dotnet publish src/ChestCounter.Android/ChestCounter.Android.csproj -c Release -o dist-android -p:AndroidSdkDirectory=$ANDROID_SDK_ROOT -p:ApplicationVersion=${{ github.run_number }} $signing
       - name: Rename
         run: cp dist-android/*-Signed.apk dist-android/ChestCounter.apk
       - uses: actions/upload-artifact@v4

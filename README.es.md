@@ -53,6 +53,14 @@ Como Fortnite solo escribe la clave de descifrado de la repetición al terminar 
 > [!TIP]
 > Fortnite solo guarda un número limitado de repeticiones sin guardar y borra las más antiguas, y una partida jugada con el contador cerrado no se cuenta. Activa **Ajustes → Abrir con Fortnite** para no tener que pensar en ello.
 
+## Android
+
+¿Juegas en el móvil? Instala [**`ChestCounter.apk`**](../../releases/latest) (Android 8 o posterior). Fortnite en
+Android no guarda repeticiones: la app cuenta de otra forma, con un contador flotante sobre el juego que tocas en cada
+cofre, o la **detección automática** (captura de pantalla, tras enseñarle una vez cómo se ve la búsqueda de un cofre
+en tu pantalla). El informe, las probabilidades y el historial son los mismos que en PC, y las repeticiones del PC
+también se importan. Detalles y límites: [`src/ChestCounter.Android/README.md`](src/ChestCounter.Android/README.md).
+
 ## La ventana
 
 Cinco pestañas: **Inicio**, **Informe**, **Overlay**, **Ajustes** y **Ayuda**. Arriba, tu cuenta y lo que está haciendo el contador (*Esperando una partida*, *Partida en curso*, *Contando los cofres…*).
@@ -199,6 +207,8 @@ ChestCounter.exe --overlay-preview <archivo.png>   guarda vistas previas del ove
 ```
 
 ## Compilarlo uno mismo
+
+App de Android y pruebas: ver [`src/ChestCounter.Android/README.md`](src/ChestCounter.Android/README.md) y `dotnet test tests/ChestCounter.Tests` (ejecútalas antes de subir un cambio de `content/content.json`).
 
 Instala el [SDK de .NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows x64) y haz doble clic en **`build.bat`**: el exe se escribe en `dist\ChestCounter.exe`. El workflow de GitHub Actions compila el exe en cada push y lo adjunta a una release cuando se sube un tag `v*`, con el texto de [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (también se muestra en el contador después de una actualización).
 

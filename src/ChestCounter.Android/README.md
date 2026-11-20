@@ -39,6 +39,24 @@ dotnet workload install android
 dotnet publish src/ChestCounter.Android/ChestCounter.Android.csproj -c Release -o dist-android
 ```
 
-The APK is `dist-android/io.github.chestcounter.android-Signed.apk` (signed with a debug key; use your own keystore
-with `-p:AndroidKeyStore=true -p:AndroidSigningKeyStore=...` for a release). CI builds it as the `ChestCounter-android`
-artifact.
+The APK is `dist-android/io.github.chestcounter.android-Signed.apk`. CI builds it as the `ChestCounter-android` artifact
+on every push, with the run number as `versionCode`, and attaches it to releases.
+
+### Signing (needed for updates)
+
+Android only installs an update over an app signed with the **same key**. Without a key, each build is signed with a
+throwaway debug key, so a new APK can't replace the installed one: players have to uninstall first and lose their
+counted matches. Create a key once and keep it safe (losing it means the same problem):
+
+```bash
+keytool -genkeypair -v -keystore chestcounter.keystore -alias chestcounter -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then add four repository secrets (*Settings → Secrets and variables → Actions*): `ANDROID_KEYSTORE_BASE64` (the output
+of `base64 -w0 chestcounter.keystore`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`chestcounter`) and
+`ANDROID_KEY_PASSWORD`. CI signs with it from then on. Never commit the keystore.
+
+### Tests
+
+The Android logic without Android types (auto-detect: `CueMatcher.cs`, a match counted by hand: `TallyRecord.cs`) is
+tested with the shared code: `dotnet test tests/ChestCounter.Tests`.

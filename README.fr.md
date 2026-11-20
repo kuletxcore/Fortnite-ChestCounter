@@ -53,6 +53,14 @@ Comme Fortnite n'écrit la clé de déchiffrement du replay qu'à la fin de la p
 > [!TIP]
 > Fortnite ne garde qu'un nombre limité de replays non sauvegardés et supprime les plus anciens, et une partie jouée compteur fermé n'est pas comptée. Active **Réglages → Ouvrir avec Fortnite** pour ne plus y penser.
 
+## Android
+
+Tu joues sur téléphone ? Installe [**`ChestCounter.apk`**](../../releases/latest) (Android 8 ou plus). Fortnite sur
+Android n'enregistre pas de replays : l'appli compte autrement, avec un compteur flottant par-dessus le jeu que tu
+touches à chaque coffre, ou la **détection auto** (capture d'écran, après lui avoir appris une fois à quoi ressemble la
+fouille d'un coffre sur ton écran). Le rapport, les chances et l'historique sont les mêmes que sur PC, et les replays
+du PC s'importent aussi. Détails et limites : [`src/ChestCounter.Android/README.md`](src/ChestCounter.Android/README.md).
+
 ## La fenêtre
 
 Cinq onglets : **Accueil**, **Rapport**, **Overlay**, **Réglages** et **Aide**. En haut, ton compte et ce que fait le compteur (*En attente d'une partie*, *Partie en cours*, *Comptage des coffres…*).
@@ -199,6 +207,8 @@ ChestCounter.exe --overlay-preview <fichier.png>   enregistre des aperçus de l'
 ```
 
 ## Le compiler soi-même
+
+Appli Android et tests : voir [`src/ChestCounter.Android/README.md`](src/ChestCounter.Android/README.md) et `dotnet test tests/ChestCounter.Tests` (à lancer avant de pousser une modification de `content/content.json`).
 
 Installe le [SDK .NET 10](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows x64), puis double-clique sur **`build.bat`** : l'exe est écrit dans `dist\ChestCounter.exe`. Le workflow GitHub Actions compile l'exe à chaque push et le joint à une release quand un tag `v*` est poussé, avec le texte de [`RELEASE_NOTES.md`](RELEASE_NOTES.md) (aussi affiché dans le compteur après une mise à jour).
 

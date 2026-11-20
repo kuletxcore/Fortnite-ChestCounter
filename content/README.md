@@ -11,7 +11,9 @@ A copy is built into the exe (used when GitHub cannot be reached), and the last 
 
 1. **Increase `revision` by 1.** A player's counter only takes a file whose revision is higher than the one it has.
 2. **Check the file.** It is validated strictly: if anything is wrong (bad date, unknown field value, missing text),
-   the whole file is ignored and the previous one stays in use. To check it locally, run the counter on a test data
+   the whole file is ignored and the previous one stays in use. Run `dotnet test tests/ChestCounter.Tests` (any OS): it applies
+   the same checks to this file, plus a few more (weeks don't overlap, prize ids are unique). CI runs them on every push
+   and builds nothing when they fail, because the apps refuse to start with an invalid built-in copy. To check it locally, run the counter on a test data
    folder with `CHESTCOUNTER_CONTENT_URL` pointing at the file (any URL that serves it, for example
    `python -m http.server`).
 3. Dates are UTC (`2026-11-15T14:00:00Z`).
