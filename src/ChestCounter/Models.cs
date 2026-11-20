@@ -345,6 +345,9 @@ public sealed class Store
     public TrackerData LoadData() => Load<TrackerData>(DataPath) ?? new TrackerData { AnalyzerVersion = ReplayAnalyzer.CurrentVersion };
     public void SaveData(TrackerData data) => Save(DataPath, data);
 
+    /// <summary>A history saved elsewhere in the data folder (a backup), null when missing or unreadable.</summary>
+    public TrackerData? LoadDataFile(string path) => Load<TrackerData>(path);
+
     private static T? Load<T>(string path) where T : class
     {
         if (!File.Exists(path))

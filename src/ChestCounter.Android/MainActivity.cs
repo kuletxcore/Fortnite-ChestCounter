@@ -166,6 +166,7 @@ public sealed class MainActivity : Activity
             RefreshActions();
         });
         AddAction(L.T("Mode : ", "Mode: ", "Modo: ") + Pretty.Playlist(_engine.Playlist), false, _engine.NextPlaylist);
+        AddAction(L.T("↺ Remettre à 0", "↺ Reset", "↺ Reiniciar"), false, ShowReset);
         AddAction(L.T("Importer des replays PC", "Import PC replays", "Importar repeticiones del PC"), false, PickReplayFiles);
         AddAction(ReplaySync.GrantedTree(this) == null ? L.T("Dossier de replays PC", "PC replays folder", "Carpeta de repeticiones del PC") : L.T("Changer de dossier", "Change folder", "Cambiar carpeta"), false, PickReplayFolder);
         AddAction(L.T("Actualiser", "Refresh", "Actualizar"), false, () => ScanInBackground(force: true));
@@ -332,6 +333,45 @@ public sealed class MainActivity : Activity
         Task.Run(() => _engine.Import(uris));
     }
 
+    // ---- Reset ----------------------------------------------------------------------------------
+
+    /// <summary>Reset the session (history kept), every count (after a backup), or undo the last full reset.</summary>
+    private void ShowReset()
+    {
+        var choices = new List<(string Text, Action Run)>
+        {
+            (L.T("Nouvelle session (la session repart de 0, le total et l'historique sont gardés)",
+                "New session (the session starts again from 0, the total and history are kept)",
+                "Nueva sesión (la sesión vuelve a 0, el total y el historial se conservan)"), _engine.ResetSession),
+            (L.T("Tout remettre à 0 (total, parties, coffres ajoutés à la main)…",
+                "Reset all counts (total, matches, chests added by hand)…",
+                "Poner todo a 0 (total, partidas, cofres añadidos a mano)…"), ConfirmResetAll),
+        };
+        if (_engine.CanUndoReset)
+        {
+            choices.Add((L.T("Annuler la dernière remise à 0", "Undo the last reset", "Deshacer el último reinicio"), () => _engine.UndoReset()));
+        }
+        new AlertDialog.Builder(this)
+            .SetTitle(L.T("Remettre à 0", "Reset", "Reiniciar"))!
+            .SetItems(choices.Select(c => c.Text).ToArray(), (_, e) => choices[e.Which].Run())!
+            .SetNegativeButton(L.T("Annuler", "Cancel", "Cancelar"), (_, _) => { })!
+            .Show();
+    }
+
+    private void ConfirmResetAll()
+    {
+        var view = _engine.Overlay();
+        new AlertDialog.Builder(this)
+            .SetTitle(L.T("Tout remettre à 0 ?", "Reset all counts?", "¿Poner todo a 0?"))!
+            .SetMessage(L.T(
+                $"Tes {view.Total} coffres et toutes tes parties sont effacés, la partie en cours aussi. Ta collection est gardée. Tu pourras annuler avec « Annuler la dernière remise à 0 ».",
+                $"Your {view.Total} chests and every match are cleared, the match in progress too. Your collection is kept. You can undo it with \"Undo the last reset\".",
+                $"Tus {view.Total} cofres y todas tus partidas se borran, también la partida en curso. Tu colección se conserva. Podrás deshacerlo con «Deshacer el último reinicio»."))!
+            .SetPositiveButton(L.T("Tout remettre à 0", "Reset all", "Poner todo a 0"), (_, _) => _engine.ResetAll())!
+            .SetNegativeButton(L.T("Annuler", "Cancel", "Cancelar"), (_, _) => { })!
+            .Show();
+    }
+
     // ---- Overlay permission, help ---------------------------------------------------------------
 
     private bool CanDrawOverlays => Build.VERSION.SdkInt < BuildVersionCodes.M || Android.Provider.Settings.CanDrawOverlays(this);
@@ -352,7 +392,8 @@ public sealed class MainActivity : Activity
                 "• 🧰 +1 à chaque coffre ouvert (appui long : annuler le dernier). Avec la fouille automatique, pense à toucher 🧰 quand le coffre s'ouvre.\n" +
                 "• ★ quand un coffre te donne un trésor.\n" +
                 "• ⏹ à la fin de la partie (sinon elle se termine seule après 35 min sans coffre).\n" +
-                "• Déplace le compteur en faisant glisser les chiffres. +1 coffre est aussi dans la notification.\n\n" +
+                "• Déplace le compteur en faisant glisser les chiffres. +1 coffre est aussi dans la notification.\n" +
+                "• ↺ (appui long) remet la session à 0 ; « ↺ Remettre à 0 » dans l'appli remet aussi tout à 0 (annulable).\n\n" +
                 "Détection automatique (👁) : le compteur regarde l'écran (Android te le demande à chaque fois) et compte un coffre quand le repère de fouille apparaît puis disparaît, même avec la fouille automatique. Apprends-lui ce repère une fois : touche 🎯 près d'un coffre, attends le décompte pendant que la fouille s'affiche, puis entoure l'anneau de fouille ou le bouton Fouiller. Le chiffre après 👁 indique la ressemblance (1 = identique). Rien n'est enregistré ni envoyé.\n\n" +
                 "Chaque coffre garde son heure : ceux d'une Heure du trésor comptent avec leurs chances augmentées. Choisis le mode joué (« Mode ») : seul le Battle Royale compte.\n\n" +
                 "Tu joues aussi sur PC ? Importe ses replays : leurs coffres sont comptés automatiquement.",
@@ -361,7 +402,8 @@ public sealed class MainActivity : Activity
                 "• 🧰 +1 for each chest opened (long press: undo the last one). With auto-search on, remember to tap 🧰 when the chest opens.\n" +
                 "• ★ when a chest gives you a treasure.\n" +
                 "• ⏹ when the match is over (otherwise it ends by itself after 35 minutes without a chest).\n" +
-                "• Drag the figures to move the counter. +1 chest is also in the notification.\n\n" +
+                "• Drag the figures to move the counter. +1 chest is also in the notification.\n" +
+                "• ↺ (hold) resets the session to 0; \"↺ Reset\" in the app can also reset every count (and undo it).\n\n" +
                 "Auto-detect (👁): the counter watches the screen (Android asks you each time) and counts a chest when the search cue shows and then goes away, auto-search included. Teach it the cue once: tap 🎯 next to a chest, let the countdown end while the search shows, then draw a box around the search ring or the Search button. The figure after 👁 is how close the spot looks to the cue (1 = identical). Nothing is recorded or sent.\n\n" +
                 "Each chest keeps its time: those of a Treasure Hour count with their boosted odds. Pick the mode you play (\"Mode\"): only Battle Royale counts.\n\n" +
                 "Also playing on PC? Import its replays: their chests are counted automatically.",
@@ -370,7 +412,8 @@ public sealed class MainActivity : Activity
                 "• 🧰 +1 por cada cofre abierto (pulsación larga: deshacer el último). Con la búsqueda automática, recuerda tocar 🧰 cuando se abra el cofre.\n" +
                 "• ★ cuando un cofre te da un tesoro.\n" +
                 "• ⏹ al terminar la partida (si no, termina sola tras 35 min sin cofres).\n" +
-                "• Arrastra las cifras para mover el contador. +1 cofre también está en la notificación.\n\n" +
+                "• Arrastra las cifras para mover el contador. +1 cofre también está en la notificación.\n" +
+                "• ↺ (pulsación larga) pone la sesión a 0; «↺ Reiniciar» en la app también pone todo a 0 (se puede deshacer).\n\n" +
                 "Detección automática (👁): el contador mira la pantalla (Android te lo pide cada vez) y cuenta un cofre cuando la señal de búsqueda aparece y luego desaparece, también con la búsqueda automática. Enséñale la señal una vez: toca 🎯 junto a un cofre, deja que termine la cuenta atrás mientras se ve la búsqueda y enmarca el anillo de búsqueda o el botón Buscar. La cifra tras 👁 indica el parecido (1 = idéntico). No se graba ni se envía nada.\n\n" +
                 "Cada cofre guarda su hora: los de una Hora del tesoro cuentan con sus probabilidades aumentadas. Elige el modo que juegas («Modo»): solo cuenta Battle Royale.\n\n" +
                 "¿También juegas en PC? Importa sus repeticiones: sus cofres se cuentan automáticamente."))!

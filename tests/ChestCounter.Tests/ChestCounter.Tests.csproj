@@ -32,6 +32,7 @@
     <Compile Include="..\..\src\ChestCounter\TreasureImages.cs" Link="Shared\TreasureImages.cs" />
     <Compile Include="..\..\src\ChestCounter.Android\CueMatcher.cs" Link="Android\CueMatcher.cs" />
     <Compile Include="..\..\src\ChestCounter.Android\TallyRecord.cs" Link="Android\TallyRecord.cs" />
+    <Compile Include="..\..\src\ChestCounter.Android\CounterReset.cs" Link="Android\CounterReset.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\src\ChestCounter\Assets\PirataOne-latin.woff2" LogicalName="PirataOne.woff2" />
