@@ -40,7 +40,7 @@ A notice shows above every tab of the window and on top of `report.html`, betwee
       "en": "Your matches are kept and will be counted as soon as version 1.5.1, in progress.",
       "es": "Tus partidas se conservan y se contarán desde la versión 1.5.1, en preparación."
     },
-    "link": "https://github.com/LED-N/Fortnite-ChestCounter/issues"
+    "link": "https://github.com/kuletxcore/Fortnite-ChestCounter/issues"
   }
 ]
 ```

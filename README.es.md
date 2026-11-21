@@ -6,7 +6,7 @@
 
 # Contador de cofres de Fortnite
 
-[![versión](https://img.shields.io/github/v/release/LED-N/Fortnite-ChestCounter?style=flat-square&label=versi%C3%B3n&color=e8b04b)](../../releases/latest) [![descargas](https://img.shields.io/github/downloads/LED-N/Fortnite-ChestCounter/total?style=flat-square&label=descargas&color=e8b04b)](../../releases) ![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-3a7bd5?style=flat-square) [![licencia](https://img.shields.io/github/license/LED-N/Fortnite-ChestCounter?style=flat-square&label=licencia&color=555)](LICENSE)
+[![versión](https://img.shields.io/github/v/release/kuletxcore/Fortnite-ChestCounter?style=flat-square&label=versi%C3%B3n&color=e8b04b)](../../releases/latest) [![descargas](https://img.shields.io/github/downloads/kuletxcore/Fortnite-ChestCounter/total?style=flat-square&label=descargas&color=e8b04b)](../../releases) ![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-3a7bd5?style=flat-square) [![licencia](https://img.shields.io/github/license/kuletxcore/Fortnite-ChestCounter?style=flat-square&label=licencia&color=555)](LICENSE)
 
 **Cuenta cada cofre que abres en Fortnite, partida tras partida, con un overlay integrado en el juego.**
 

@@ -2,7 +2,8 @@
 
 > **On PC, turn on replays in Fortnite first**: *Settings → Game → Replays → Record Replays: On*. The tool only reads these replay files: no game modification, no access to the game's memory. **On Android**, Fortnite records no replays: you count with the floating counter instead (see below).
 
-**What's new in 1.5.2**
+**What's new in 1.5.3**
+- **Updates and treasure hunt data now come from [kuletxcore/Fortnite-ChestCounter](https://github.com/kuletxcore/Fortnite-ChestCounter)**
 - **New: the Android app.** A floating counter over Fortnite: tap 🧰 for each chest and ★ for a treasure, or turn on 👁 **auto-detect** (screen capture; teach it once with 🎯 what a chest search looks like on your screen). The report, your chances and the collection are the same as on the PC, and PC replays can be imported
 - **Reset (Android)**: hold ↺ on the floating counter for a new session; in the app, *↺ Reset* can also reset every count, and undo it
 - **Session (Android)**: the session no longer goes back to 0 by itself when Android closes the app in the background
@@ -17,7 +18,8 @@ Windows may show *"Windows protected your PC"* (unsigned exe): *More info → Ru
 
 > **Sur PC, active d'abord les rediffusions dans Fortnite** : *Paramètres → Jeu → Rediffusions → Enregistrer les rediffusions : Activé*. L'outil lit uniquement ces fichiers replay : aucune modification du jeu, aucun accès à la mémoire du jeu. **Sur Android**, Fortnite n'enregistre pas de replays : tu comptes avec le compteur flottant (voir ci-dessous).
 
-**Nouveautés de la 1.5.2**
+**Nouveautés de la 1.5.3**
+- **Les mises à jour et les données de la chasse au trésor viennent maintenant de [kuletxcore/Fortnite-ChestCounter](https://github.com/kuletxcore/Fortnite-ChestCounter)**
 - **Nouveau : l'appli Android.** Un compteur flottant par-dessus Fortnite : touche 🧰 à chaque coffre et ★ pour un trésor, ou active la 👁 **détection auto** (capture d'écran ; apprends-lui une fois avec 🎯 à quoi ressemble la fouille d'un coffre sur ton écran). Le rapport, tes chances et la collection sont les mêmes que sur PC, et les replays du PC s'importent
 - **Remise à 0 (Android)** : garde le doigt sur ↺ du compteur flottant pour une nouvelle session ; dans l'appli, *↺ Remettre à 0* peut aussi tout remettre à 0, et l'annuler
 - **Session (Android)** : la session ne repart plus à 0 toute seule quand Android ferme l'appli en arrière-plan
@@ -32,7 +34,8 @@ Windows peut afficher « Windows a protégé votre ordinateur » (exe non signé
 
 > **En PC, activa primero las repeticiones en Fortnite**: *Ajustes → Juego → Repeticiones → Grabar repeticiones: Activado*. La herramienta solo lee esos archivos de repetición: ninguna modificación del juego, ningún acceso a la memoria del juego. **En Android**, Fortnite no guarda repeticiones: cuentas con el contador flotante (ver abajo).
 
-**Novedades de la 1.5.2**
+**Novedades de la 1.5.3**
+- **Las actualizaciones y los datos de la búsqueda del tesoro ahora vienen de [kuletxcore/Fortnite-ChestCounter](https://github.com/kuletxcore/Fortnite-ChestCounter)**
 - **Nuevo: la app de Android.** Un contador flotante sobre Fortnite: toca 🧰 en cada cofre y ★ para un tesoro, o activa la 👁 **detección automática** (captura de pantalla; enséñale una vez con 🎯 cómo se ve la búsqueda de un cofre en tu pantalla). El informe, tus probabilidades y la colección son los mismos que en PC, y las repeticiones del PC se pueden importar
 - **Reinicio (Android)**: mantén pulsado ↺ en el contador flotante para una nueva sesión; en la app, *↺ Reiniciar* también pone todo a 0, y se puede deshacer
 - **Sesión (Android)**: la sesión ya no vuelve sola a 0 cuando Android cierra la app en segundo plano
