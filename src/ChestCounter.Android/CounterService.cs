@@ -283,10 +283,10 @@ public sealed class CounterService : Service
         var toggle = PendingIntent.GetService(this, 2, new Intent(this, typeof(CounterService)).SetAction(ActionToggleOverlay), PendingIntentFlags.Immutable);
         var chest = PendingIntent.GetService(this, 3, new Intent(this, typeof(CounterService)).SetAction(ActionAddChest), PendingIntentFlags.Immutable);
         var end = PendingIntent.GetService(this, 4, new Intent(this, typeof(CounterService)).SetAction(ActionEndMatch), PendingIntentFlags.Immutable);
-        var text = (_engine.InMatch ? L.T($"Partie : {_engine.LiveChests} · ", $"Match: {_engine.LiveChests} · ", $"Partida: {_engine.LiveChests} · ") : "")
-            + L.T($"{view.Total} coffres · session {view.Session} · ★ {view.Treasures}",
-            $"{view.Total} chests · session {view.Session} · ★ {view.Treasures}",
-            $"{view.Total} cofres · sesión {view.Session} · ★ {view.Treasures}");
+        var text = L.T($"{view.Total} coffres · ★ {view.Treasures} · session {_engine.SessionNumber}",
+            $"{view.Total} chests · ★ {view.Treasures} · session {_engine.SessionNumber}",
+            $"{view.Total} cofres · ★ {view.Treasures} · sesión {_engine.SessionNumber}")
+            + (_engine.InMatch ? L.T($" · partie {_engine.MatchNumber}", $" · match {_engine.MatchNumber}", $" · partida {_engine.MatchNumber}") : "");
 #pragma warning disable CA1422
         var b = Build.VERSION.SdkInt >= BuildVersionCodes.O ? new Notification.Builder(this, Channel) : new Notification.Builder(this);
 #pragma warning restore CA1422
@@ -486,10 +486,13 @@ internal sealed class OverlayWindow
     {
         _last = v;
         _total.Text = $"🧰 {v.Total}" + (v.CurrentLive ? "  ●" : "");
-        var current = v.CurrentLive
-            ? L.T($"Partie {v.Current}", $"Match {v.Current}", $"Partida {v.Current}")
-            : v.Last != null ? L.T($"Dernière {v.Last}", $"Last {v.Last}", $"Última {v.Last}") : null;
-        _detail.Text = (current != null ? current + " · " : "") + L.T($"Session {v.Session}", $"Session {v.Session}", $"Sesión {v.Session}") + $" · ★ {v.Treasures}"
+        // Only the big figure counts chests: the line below says which match and session this is (numbers, not counts).
+        _engine.Overlay();
+        var n = _engine.MatchNumber;
+        var match = _engine.InMatch ? L.T($"Partie {n}", $"Match {n}", $"Partida {n}")
+            : n > 0 ? L.T($"Dernière : partie {n}", $"Last: match {n}", $"Última: partida {n}") : null;
+        var session = _engine.SessionNumber;
+        _detail.Text = (match != null ? match + " · " : "") + L.T($"Session {session}", $"Session {session}", $"Sesión {session}") + $" · ★ {v.Treasures}"
             + (v.Squad != null ? $" · {OverlayModel.SquadLabel} {v.Squad}" : "");
         if (CounterService.Capturing)
         {

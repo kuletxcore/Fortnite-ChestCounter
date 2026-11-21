@@ -82,6 +82,15 @@ public static class SessionRules
         ? null
         : data.Matches.Max(m => (m.MatchStartUtc ?? m.AnalyzedAtUtc).AddSeconds(m.DurationSeconds ?? 0));
 
+    /// <summary>
+    /// Number of the match in the session (1, 2, 3…): the finished matches of the session, plus the one being counted.
+    /// 0 before the first match of the session.
+    /// </summary>
+    public static int MatchNumber(TrackerData view, bool inMatch) => view.Matches.Count(ReportWriter.IsThisSession) + (inMatch ? 1 : 0);
+
+    /// <summary>Number of the next session: 1 for the first one ever, then one more each time.</summary>
+    public static int NextSessionNumber(int current, bool firstEver) => firstEver ? 1 : Math.Max(1, current + 1);
+
     /// <summary>True when a match starting now opens a new session (the previous one is long over).</summary>
     public static bool StartsNewSession(DateTime? lastActivityUtc, DateTime sessionStartUtc, DateTime nowUtc) =>
         nowUtc - (lastActivityUtc is { } last && last > sessionStartUtc ? last : sessionStartUtc) >= IdleGap;

@@ -98,6 +98,7 @@ public sealed partial class Engine
     private OverlayView BuildOverlay()
     {
         var live = LiveRecord();
+        MatchNumber = SessionRules.MatchNumber(Profiles.View(Tracker.Data, Config), live != null);
         return OverlayModel.Build(Profiles.View(Tracker.Data, Config), live, live != null || Tracker.HasPending, Config.ShowSquadTotal);
     }
 

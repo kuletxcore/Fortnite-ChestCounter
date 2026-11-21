@@ -141,10 +141,20 @@ public sealed partial class Engine
         }
     }
 
+    private const string SessionNumberKey = "session_number";
+
+    /// <summary>1 for the first session, one more at each new session (shown on the overlay: "Match 2 · Session 3").</summary>
+    public int SessionNumber => Math.Max(1, Prefs.GetInt(SessionNumberKey, 1));
+
+    /// <summary>Number of the match in the session (the one being counted, else the last one); 0 before the first.</summary>
+    public int MatchNumber { get; private set; }
+
     private void StartSession(DateTime utc)
     {
+        var first = Prefs.GetLong(SessionKey, 0) <= 0;
         ReportWriter.SessionStartUtc = utc;
-        Prefs.Edit()!.PutLong(SessionKey, utc.Ticks).Apply();
+        Prefs.Edit()!.PutLong(SessionKey, utc.Ticks)
+            .PutInt(SessionNumberKey, SessionRules.NextSessionNumber(SessionNumber, first)).Apply();
     }
 
     /// <summary>"Session" back to 0. The match being counted is saved first: it stays in the total and the history.</summary>
